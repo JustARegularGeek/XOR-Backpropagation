@@ -1,5 +1,4 @@
 import numpy as np
-import os
 
 def load_parameters(filepath):
     """
@@ -8,7 +7,7 @@ def load_parameters(filepath):
     """
     params = {}
 
-    with open("parameters.txt") as file:
+    with open(filepath) as file:
 
         for line in file:
             temp = line.split()
@@ -184,31 +183,31 @@ class NeuralNetwork:
 
             # Calculate weight and bias difference between layer 1 and output layer
             dWeight_h1_o = self.learning_rate * np.outer(self.out_h1, delta_output) + self.momentum * self.momentum_h1_o
-            dBias_h1 = self.learning_rate * delta_h1 + self.momentum * self.momentum_bias_h1
+            dBias_o = self.learning_rate * delta_output + self.momentum * self.momentum_bias_o
 
             # wij(t + 1) = wij(t) + Δwij + μ[wij(t) - wij(t - 1)]
             self.weights_h1_o += dWeight_h1_o
-
+            
             # biasj(t + 1) = biasj(t) + Δbiasj + μ[biasj(t) - biasj(t - 1)]
-            self.bias_h1 += dBias_h1
+            self.bias_o += dBias_o
 
             # Update weight and bias momentum
             self.momentum_h1_o = dWeight_h1_o
-            self.momentum_bias_h1 = dBias_h1
+            self.momentum_bias_o = dBias_o
 
         # Calculate weight and bias difference between input layer and layer 1 
-        dW_i_h1 = self.learning_rate * np.outer(self.inputs, delta_h1) + self.momentum * self.momentum_i_h1
-        dB_h1 = self.learning_rate * delta_h1 + self.momentum * self.momentum_bias_h1
+        dWeight_i_h1 = self.learning_rate * np.outer(self.inputs, delta_h1) + self.momentum * self.momentum_i_h1
+        dBias_h1 = self.learning_rate * delta_h1 + self.momentum * self.momentum_bias_h1
 
         # wij(t + 1) = wij(t) + Δwij + μ[wij(t) - wij(t - 1)]
-        self.weights_i_h1 += dW_i_h1
+        self.weights_i_h1 += dWeight_i_h1
 
         # biasj(t + 1) = biasj(t) + Δbiasj + μ[biasj(t) - biasj(t - 1)]
-        self.bias_h1 += dB_h1
+        self.bias_h1 += dBias_h1
 
         # Update weight and bias momentum
-        self.momentum_i_h1 = dW_i_h1          
-        self.momentum_bias_h1 = dB_h1
+        self.momentum_i_h1 = dWeight_i_h1          
+        self.momentum_bias_h1 = dBias_h1
 
     def evaluate_dataset(self, inputs, targets):
             """Evaluates overall Mean Squared Error and classification success rate on a given dataset."""
@@ -222,9 +221,9 @@ class NeuralNetwork:
                 # Error calculation for this pattern
                 total_error += np.sum((targets[i] - output) ** 2) / 2
     
-            # Check if rounded output matches target
-            if np.all(np.round(output) == targets[i]):
-                correct_predictions += 1
+                # Check if rounded output matches target
+                if np.all((output >= 0.5).astype(int) == targets[i]):
+                    correct_predictions += 1
     
             mse = total_error / num_patterns
             success_rate = (correct_predictions / num_patterns) * 100
@@ -268,10 +267,8 @@ class NeuralNetwork:
             success_history.append([epoch + 1, train_success, test_success])
 
         # Get current directory
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        errors_path = os.path.join(script_dir, "errors.txt")
-        success_path = os.path.join(script_dir, "successrate.txt")
+        errors_path = "errors.txt"
+        success_path = "successrate.txt"
 
         # Save errors.txt (3 columns: epoch, train_error, test_error)
         np.savetxt(errors_path, error_history, fmt=["%d", "%.6f", "%.6f"])
