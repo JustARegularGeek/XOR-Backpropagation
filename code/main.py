@@ -1,6 +1,11 @@
 import numpy as np
+import os
 
 def load_parameters(filepath):
+    """
+    Reads parameters.txt and returns a dictionary of configuration values.
+    Example output: {'learningRate': 0.3, 'maxIterations': 5000, ...}
+    """
     params = {}
 
     with open("parameters.txt") as file:
@@ -18,11 +23,17 @@ def load_parameters(filepath):
     return params
 
 class NeuralNetwork:
+    """
+    A Feedforward Neural Network implemented from scratch using NumPy,
+    supporting customizable hidden layers, momentum-based gradient descent, and online learning.
+    """
 
     def sigmoid(self, x):
+        """Standard sigmoid activation function mapping any real value to the range (0, 1)."""
         return 1 / (1 + np.exp(-x))
 
     def __init__(self, params):
+        """Initializes network architecture, weights, biases, and momentum buffers based on config parameters."""
         # Cast parameters to the correct data types
         self.learning_rate = float(params['learningRate'])
         self.momentum = float(params['momentum'])
@@ -90,6 +101,10 @@ class NeuralNetwork:
         self.momentum_bias_o = np.zeros_like(self.bias_o)
                     
     def forward_pass(self, inputs):
+        """
+        Executes a forward pass through the network given an input pattern.
+        Saves intermediate layer outputs for use during backpropagation.
+        """
         self.inputs = inputs
 
         # Calculate output for layer 1
@@ -115,6 +130,10 @@ class NeuralNetwork:
         return self.out
         
     def backward_pass(self, expected_output):
+        """
+        Computes local gradients (deltas) and updates all network weights 
+        and biases using online gradient descent with momentum.
+        """
         # Calculate output layer delta
         delta_output = self.out * (1 - self.out) * (expected_output - self.out)
 
@@ -190,42 +209,91 @@ class NeuralNetwork:
         # Update weight and bias momentum
         self.momentum_i_h1 = dW_i_h1          
         self.momentum_bias_h1 = dB_h1
-            
-        
-    def train(self, training_inputs, expected_outputs, num_epochs):
-        # TODO: Loop for maxIterations (epochs). 
-        # Inside the loop, shuffle data, call forward_pass and backward_pass for each row.
 
+    def evaluate_dataset(self, inputs, targets):
+            """Evaluates overall Mean Squared Error and classification success rate on a given dataset."""
+            total_error = 0.0
+            correct_predictions = 0
+            num_patterns = len(inputs)
+    
+            for i in range(num_patterns):
+                output = self.forward_pass(inputs[i])
+    
+                # Error calculation for this pattern
+                total_error += np.sum((targets[i] - output) ** 2) / 2
+    
+            # Check if rounded output matches target
+            if np.all(np.round(output) == targets[i]):
+                correct_predictions += 1
+    
+            mse = total_error / num_patterns
+            success_rate = (correct_predictions / num_patterns) * 100
+    
+            return mse, success_rate    
+        
+    def train(self, training_inputs, expected_outputs, test_inputs, test_outputs, num_epochs):
+        """
+        Runs the online training loop over multiple epochs with random shuffling,
+        tracks evaluation errors/success rates, and writes output files.
+        """
         num_patterns = len(training_inputs)
+
+        # Lists to store history for file generation
+        error_history = []
+        success_history = []
 
         for epoch in range(num_epochs):
             indices = np.arange(num_patterns)
             np.random.shuffle(indices)
-
-            epoch_error = 0.0
 
             for i in indices: 
                 current_input = training_inputs[i]
                 target_output = expected_outputs[i]
 
                 # Forward pass
-                actual_output = self.forward_pass(current_input)
+                self.forward_pass(current_input)
 
                 # Backward pass
                 self.backward_pass(target_output)
 
-                # Calculate error
-                pattern_error = np.sum(target_output - actual_output) ** 2 / 2
+            # Evaluate training set performance at end of epoch
+            train_mse, train_success = self.evaluate_dataset(training_inputs, expected_outputs)
+                
+            # Evaluate testing set performance at end of epoch
+            test_mse, test_success = self.evaluate_dataset(test_inputs, test_outputs)
 
-                # Add the error to the total epoch error
-                epoch_error += pattern_error
+            # Store for files: [epoch, train_error, test_error]
+            error_history.append([epoch + 1, train_mse, test_mse])
+            # Store for files: [epoch, train_success, test_success]
+            success_history.append([epoch + 1, train_success, test_success])
 
-            # Calculate mean square error
-            mse = epoch_error / num_patterns
+        # Get current directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
 
-            # Print progress every 100 epochs so you can watch it learn
-            if epoch % 100 == 0:
-                print(f"Epoch {epoch} | MSE: {mse}")
+        errors_path = os.path.join(script_dir, "errors.txt")
+        success_path = os.path.join(script_dir, "successrate.txt")
+
+        # Save errors.txt (3 columns: epoch, train_error, test_error)
+        np.savetxt(errors_path, error_history, fmt=["%d", "%.6f", "%.6f"])
+        print(f"Saved errors to: {errors_path}")
+
+        # Save successrate.txt (3 columns: epoch, train_success, test_success)
+        np.savetxt(success_path, success_history, fmt=["%d", "%.2f", "%.2f"])
+        print(f"Saved success rates to: {success_path}")
+
+        # Print final patterns to screen
+        print("--- Final Results on Patterns ---")
+        print(f"{'Input':<20} | {'Desired (t)':<12} | {'Actual (o)':<12}")
+        print("-" * 52)
+
+        for i in range(num_patterns):
+            actual = self.forward_pass(training_inputs[i])
+
+            # Convert inputs and targets to integers for a cleaner look (assumes binary 0/1 inputs)
+            clean_input = training_inputs[i].astype(int)
+            clean_target = expected_outputs[i].astype(int)
+
+            print(f"{str(clean_input):<20} | {str(clean_target):<12} | {str(np.round(actual, 4)):<12}")            
 
 if __name__ == "__main__":
     # Load parameters
@@ -246,9 +314,19 @@ if __name__ == "__main__":
     
     # Initialize and train network
     nn = NeuralNetwork(params)
-    
+
+    # Load data
+    test_data = np.loadtxt(params["testFile"])
+
+    # Split the data into inputs and expected outputs
+        # Grabs all rows, and columns from index 0 up to num_inputs
+    test_inputs = test_data[:, :num_inputs]
+
+    # Grabs all rows, and the final 'num_outputs' columns
+    test_outputs = test_data[:, -num_outputs:]
+
     # Get maxIterations from parameters for the number of epochs
     epochs = int(params['maxIterations'])
     
     # Pass both arrays into your train function
-    nn.train(training_inputs, expected_outputs, epochs)
+    nn.train(training_inputs, expected_outputs, test_inputs, test_outputs, epochs)
