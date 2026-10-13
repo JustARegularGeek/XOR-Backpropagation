@@ -1,12 +1,8 @@
-"""
-EPL 442 - Assignment 1: plots errors.txt and successrate.txt (current folder).
-Name: <YOUR NAME>   AM: <YOUR AM>
-"""
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# --- 1. Errors ---
+# Errors plot
 if os.path.exists("errors.txt"):
     data = np.loadtxt("errors.txt")
     plt.figure(figsize=(10, 5))
@@ -23,7 +19,7 @@ if os.path.exists("errors.txt"):
 else:
     print("errors.txt not found. Run the training script first!")
 
-# --- 2. Success rate ---
+# Success rate 
 if os.path.exists("successrate.txt"):
     data = np.loadtxt("successrate.txt")
     plt.figure(figsize=(10, 5))

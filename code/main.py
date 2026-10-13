@@ -266,7 +266,7 @@ class NeuralNetwork:
             # Store for files: [epoch, train_success, test_success]
             success_history.append([epoch + 1, train_success, test_success])
 
-        # Get current directory
+        # Define output file paths
         errors_path = "errors.txt"
         success_path = "successrate.txt"
 
