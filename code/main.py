@@ -219,7 +219,7 @@ class NeuralNetwork:
                 output = self.forward_pass(inputs[i])
     
                 # Error calculation for this pattern
-                total_error += np.sum((targets[i] - output) ** 2) / 2
+                total_error += np.sum((targets[i] - output) ** 2)
     
                 # Check if rounded output matches target
                 if np.all((output >= 0.5).astype(int) == targets[i]):

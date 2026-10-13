@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 if os.path.exists("errors.txt"):
     data = np.loadtxt("errors.txt")
     plt.figure(figsize=(10, 5))
-    plt.plot(data[:, 0], data[:, 1], label="Training error (MSE)", color="blue")
-    plt.plot(data[:, 0], data[:, 2], label="Testing error (MSE)", color="orange", linestyle="--")
+    plt.semilogy(data[:, 0], data[:, 1], label="Training error (MSE)", color="blue")
+    plt.semilogy(data[:, 0], data[:, 2], label="Testing error (MSE)", color="orange", linestyle="--")
     plt.xlabel("Epochs")
-    plt.ylabel("Mean Squared Error (MSE)")
+    plt.ylabel("Mean Squared Error (MSE, log scale)")
     plt.title("Training vs Testing Error Over Epochs")
     plt.legend()
     plt.grid(True)

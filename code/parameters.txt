@@ -1,9 +1,9 @@
-numHiddenLayerOneNeurons 2
-numHiddenLayerTwoNeurons 0
+numHiddenLayerOneNeurons 4
+numHiddenLayerTwoNeurons 4
 numInputNeurons 2
 numOutputNeurons 1
-learningRate 0.3
-momentum 0.2
+learningRate 0.5
+momentum 0.9
 maxIterations 5000
 randomSeed 42
 trainFile training.txt
